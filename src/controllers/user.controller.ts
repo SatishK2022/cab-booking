@@ -53,15 +53,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        console.log("USER: ", user)
-
-        const comparedPassword = await bcrypt.compare(password, user.password);
-
-        console.log("COMPARED PASSWORD: ", comparedPassword);
-
         const isPasswordValid = await user.isPasswordCorrect(password);
-
-        console.log("IS PASSWORD CORRECT: ", isPasswordValid)
 
         if (!isPasswordValid) {
             res.status(401).json({
@@ -93,8 +85,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         }
 
         res.status(200)
-            .cookie("accessToken", accessToken, cookieOptions)
-            .cookie("refreshToken", refreshToken, cookieOptions)
+            .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 24 * 60 * 60 * 1000 }) // 1 day
+            .cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 20 * 24 * 60 * 60 * 1000 }) // 20 days
             .json({
                 success: true,
                 statusCode: 200,
@@ -112,5 +104,43 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
             message: error instanceof Error ? error.message : "Internal Server Error",
             error
         });
+    }
+}
+
+export const logoutUser = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    try {
+        await User.findByIdAndUpdate(
+            userId,
+            {
+                $unset: {
+                    refreshToken: 1
+                }
+            },
+            { new: true }
+        )
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+        }
+
+        res.status(200)
+            .clearCookie("accessToken", cookieOptions)
+            .clearCookie("refreshToken", cookieOptions)
+            .json({
+                success: true,
+                statusCode: 200,
+                message: "User logged out successfully"
+            })
+    } catch (error: any) {
+        console.error("Error logging out user", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error.message || "Internal Server Error",
+            error
+        })
     }
 }
