@@ -11,12 +11,13 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(cors());
 
-// Routes Import
 
+// Routes Import
+import userRoutes from "./routes/user.routes";
 
 
 // Routes
-
+app.use("/api/v1/user", userRoutes);
 
 
 app.get("/", (_, res) => {
