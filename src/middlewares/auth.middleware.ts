@@ -18,12 +18,12 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
             res.status(401).json({
                 success: false,
                 statusCode: 401,
-                message: "Unauthorized access"
+                message: "Unauthorized access - Token not found"
             });
             return;
         }
 
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string);
 
         const user = await User.findById((decodedToken as jwt.JwtPayload).id);
 
@@ -31,7 +31,7 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
             res.status(401).json({
                 success: false,
                 statusCode: 401,
-                message: "Unauthorized access"
+                message: "Unauthorized access - User not found"
             });
             return;
         }
@@ -53,7 +53,8 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
         res.status(401).json({
             success: false,
             statusCode: 401,
-            message: "Unauthorized access"
+            message: "Unauthorized access",
+            error
         })
     }
 }

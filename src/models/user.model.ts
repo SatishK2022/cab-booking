@@ -62,7 +62,7 @@ userSchema.methods.generateAccessToken = function () {
         email: this.email,
         username: this.username
     },
-        process.env.JWT_SECRET as string,
+        process.env.ACCESS_TOKEN_SECRET as string,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '1d' });
 }
 
@@ -72,7 +72,7 @@ userSchema.methods.generateRefreshToken = function () {
         email: this.email,
         username: this.username
     },
-        process.env.JWT_SECRET as string,
+        process.env.REFRESH_TOKEN_SECRET as string,
         { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '20d' });
 }
 

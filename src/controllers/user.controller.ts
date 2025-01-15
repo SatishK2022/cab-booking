@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/user.model";
 import { Types } from "mongoose";
-import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 interface TokenResponse {
     accessToken: string;
@@ -140,6 +140,128 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
             success: false,
             statusCode: 500,
             message: error.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+    try {
+        if (!incomingRefreshToken) {
+            res.status(401).json({
+                success: false,
+                statusCode: 401,
+                message: "Unauthorized access"
+            });
+            return;
+        }
+
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET as string);
+
+        const user = await User.findById((decodedToken as jwt.JwtPayload).id);
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                statusCode: 401,
+                message: "Invalid refresh token"
+            });
+            return;
+        }
+
+        if (incomingRefreshToken !== user.refreshToken) {
+            res.status(401).json({
+                success: false,
+                statusCode: 401,
+                message: "Refresh token is expired or invalid"
+            });
+            return;
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+        }
+
+        const tokenResponse = await generateAccessAndRefreshToken(user._id);
+
+        if (!tokenResponse) {
+            res.status(500).json({
+                success: false,
+                statusCode: 500,
+                message: "Error generating tokens"
+            });
+            return;
+        }
+
+        const { accessToken, refreshToken } = tokenResponse;
+
+        res.status(200)
+            .cookie("accessToken", accessToken, { ...options, maxAge: 24 * 60 * 60 * 1000 }) // 1 day
+            .cookie("refreshToken", refreshToken, { ...options, maxAge: 20 * 24 * 60 * 60 * 1000 }) // 20 days
+            .json({
+                success: true,
+                statusCode: 200,
+                message: "Access token refreshed successfully",
+                data: {
+                    accessToken,
+                    refreshToken
+                }
+            })
+    } catch (error: any) {
+        console.error("Error refreshing access token", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const changeCurrentPassword = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    const { oldPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(userId).select("+password");
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                statusCode: 404,
+                message: "User not found"
+            });
+            return;
+        }
+
+        const isPasswordValid = user?.isPasswordCorrect(oldPassword);
+
+        if (!isPasswordValid) {
+            res.status(401).json({
+                success: false,
+                statusCode: 401,
+                message: "Invalid password"
+            });
+            return;
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            statusCode: 200,
+            message: "Password changed successfully"
+        });
+    } catch (error: any) {
+        console.error("Error while changing password", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
             error
         })
     }
