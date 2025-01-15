@@ -14,10 +14,12 @@ app.use(cors());
 
 // Routes Import
 import userRoutes from "./routes/user.routes";
+import blogRoutes from "./routes/blog.routes";
 
 
 // Routes
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/blog", blogRoutes);
 
 
 app.get("/", (_, res) => {
