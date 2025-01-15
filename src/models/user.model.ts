@@ -6,7 +6,9 @@ export interface IUser {
     name: string;
     email: string;
     password: string;
-    refreshToken: string
+    refreshToken: string;
+    resetPasswordToken: string;
+    resetPasswordTokenExpiry: Date
 }
 
 export interface IUserDocument extends IUser, Document {
@@ -43,7 +45,9 @@ const userSchema = new Schema({
         trim: true,
         select: false,
     },
-    refreshToken: String
+    refreshToken: String,
+    resetPasswordToken: String,
+    resetPasswordTokenExpiry: Date
 }, { timestamps: true, versionKey: false });
 
 userSchema.pre('save', async function (next) {

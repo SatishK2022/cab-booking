@@ -1,12 +1,17 @@
 import { Router } from "express";
-import { changeCurrentPassword, loginUser, logoutUser, refreshAccessToken } from "../controllers/user.controller";
+import { changeCurrentPassword, forgotPassword, getUser, loginUser, logoutUser, refreshAccessToken, resetPassword } from "../controllers/user.controller";
 import { verifyJWT } from "../middlewares/auth.middleware";
 
 const router: Router = Router();
 
 router.post("/login", loginUser);
+router.post("/refresh-token", refreshAccessToken);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+
+// Protected routes
+router.get("/me", verifyJWT, getUser);
 router.post("/logout", verifyJWT, logoutUser);
 router.post("/change-password", verifyJWT, changeCurrentPassword);
-router.post("/refresh-token", verifyJWT, refreshAccessToken);
 
 export default router;

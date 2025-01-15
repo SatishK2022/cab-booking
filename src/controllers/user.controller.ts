@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import User from "../models/user.model";
 import { Types } from "mongoose";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { sendMail } from "../utils/sendMail";
 
 interface TokenResponse {
     accessToken: string;
@@ -77,7 +79,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
         const { accessToken, refreshToken } = tokenResponse;
 
-        const loggedInUser = await User.findById(user._id).select("-password -refreshToken -createdAt -updatedAt");
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken -createdAt -updatedAt -__v -resetPasswordToken -resetPasswordTokenExpiry");
 
         const cookieOptions = {
             httpOnly: true,
@@ -258,6 +260,116 @@ export const changeCurrentPassword = async (req: Request, res: Response): Promis
         });
     } catch (error: any) {
         console.error("Error while changing password", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const getUser = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    try {
+        const user = await User.findById(userId).select("-password -refreshToken -createdAt -updatedAt -__v");
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                statusCode: 404,
+                message: "User not found"
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            statusCode: 200,
+            message: "User fetched successfully",
+            data: user
+        })
+    } catch (error: any) {
+        console.error("Error while getting user", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+
+    try {
+        const existingUser = await User.findOne({ email });
+
+        if (!existingUser) {
+            res.status(404).json({
+                success: false,
+                statusCode: 404,
+                message: "User not found"
+            });
+            return;
+        }
+
+        const token = await bcrypt.hash(email, 10);
+
+        existingUser.resetPasswordToken = token;
+        existingUser.resetPasswordTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        await existingUser.save();
+
+        await sendMail(email, "Reset Password", `<p>Click <a href="${process.env.FRONTEND_URL}/reset-password?token=${token}">here</a> to reset your password</p>`);
+
+        res.status(200).json({
+            success: true,
+            statusCode: 200,
+            message: "Password reset email sent successfully"
+        });
+    } catch (error: any) {
+        console.error("Error while forgot password", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+    const { token } = req.query;
+    const { password } = req.body;
+
+    try {
+        const existingUser = await User.findOne({ resetPasswordToken: token, resetPasswordTokenExpiry: { $gt: Date.now() } });
+
+        if (!existingUser) {
+            res.status(404).json({
+                success: false,
+                statusCode: 404,
+                message: "Invalid or expired token"
+            });
+            return;
+        }
+
+        existingUser.password = password;
+        existingUser.resetPasswordToken = '';
+        existingUser.resetPasswordTokenExpiry = new Date();
+
+        await existingUser.save();
+
+        res.status(200).json({
+            success: true,
+            statusCode: 200,
+            message: "Password reset successfully"
+        });
+    } catch (error: any) {
+        console.error("Error while resetting password", error);
         res.status(500).json({
             success: false,
             statusCode: 500,
