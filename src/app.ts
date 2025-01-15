@@ -15,11 +15,13 @@ app.use(cors());
 // Routes Import
 import userRoutes from "./routes/user.routes";
 import blogRoutes from "./routes/blog.routes";
+import leadRoutes from "./routes/lead.routes";
 
 
 // Routes
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/blog", blogRoutes);
+app.use("/api/v1/lead", leadRoutes);
 
 
 app.get("/", (_, res) => {
