@@ -1,6 +1,19 @@
 import { Schema, model } from "mongoose";
 
-const leadSchema = new Schema({
+export interface ILead {
+    _id?: Schema.Types.ObjectId;
+    name: string;
+    email: string;
+    phone: string;
+    pickupAddress: string;
+    dropAddress: string;
+    pickupDate: Date;
+    dropDate: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+const leadSchema = new Schema<ILead>({
     name: {
         type: String,
         required: [true, "Name is required"],
@@ -43,5 +56,5 @@ const leadSchema = new Schema({
     },
 }, { timestamps: true, versionKey: false });
 
-const Lead = model("Lead", leadSchema);
+const Lead = model<ILead>("Lead", leadSchema);
 export default Lead;

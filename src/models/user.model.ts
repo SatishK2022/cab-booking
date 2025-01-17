@@ -3,24 +3,21 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export interface IUser {
+    _id?: Types.ObjectId;
     name: string;
     email: string;
     password: string;
     refreshToken: string;
     resetPasswordToken: string;
-    resetPasswordTokenExpiry: Date
+    resetPasswordTokenExpiry: Date;
+    isPasswordCorrect?: (password: string) => Promise<boolean>;
+    generateAccessToken?: () => string;
+    generateRefreshToken?: () => string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
-export interface IUserDocument extends IUser, Document {
-    id: Types.ObjectId;
-    isPasswordCorrect(password: string): Promise<boolean>;
-    generateAccessToken(): string;
-    generateRefreshToken(): string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-const userSchema = new Schema({
+const userSchema = new Schema<IUser>({
     name: {
         type: String,
         required: [true, "Name is required"],
@@ -80,5 +77,5 @@ userSchema.methods.generateRefreshToken = function () {
         { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '20d' });
 }
 
-const User = model<IUserDocument>("User", userSchema);
+const User = model<IUser>("User", userSchema);
 export default User;
