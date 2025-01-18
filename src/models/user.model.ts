@@ -10,9 +10,9 @@ export interface IUser {
     refreshToken: string;
     resetPasswordToken: string;
     resetPasswordTokenExpiry: Date;
-    isPasswordCorrect?: (password: string) => Promise<boolean>;
-    generateAccessToken?: () => string;
-    generateRefreshToken?: () => string;
+    isPasswordCorrect(password: string): Promise<boolean>;
+    generateAccessToken(): string;
+    generateRefreshToken(): string;
     createdAt?: Date;
     updatedAt?: Date;
 }
