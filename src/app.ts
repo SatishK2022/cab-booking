@@ -17,6 +17,7 @@ import userRoutes from "./routes/user.routes";
 import blogRoutes from "./routes/blog.routes";
 import leadRoutes from "./routes/lead.routes";
 import cabRoutes from "./routes/cab.routes";
+import packageRoutes from "./routes/package.routes";
 
 
 // Routes
@@ -24,6 +25,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/lead", leadRoutes);
 app.use("/api/v1/cab", cabRoutes);
+app.use("/api/v1/package", packageRoutes);
 
 
 app.get("/", (_, res) => {

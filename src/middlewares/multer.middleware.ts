@@ -6,7 +6,7 @@ const storage: StorageEngine = multer.diskStorage({
         cb(null, "./public/temp");
     },
     filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-        const fileName = file.originalname.split(" ").join("_") + Date.now();
+        const fileName = `${Date.now()}-${file.originalname}`;
 
         cb(null, fileName);
     }
