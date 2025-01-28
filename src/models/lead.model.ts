@@ -21,7 +21,6 @@ const leadSchema = new Schema<ILead>({
     },
     email: {
         type: String,
-        unique: true,
         trim: true,
         lowercase: true,
         validate: {

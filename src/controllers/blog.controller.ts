@@ -44,7 +44,7 @@ export const createBlog = async (req: Request, res: Response): Promise<void> => 
 
 export const getBlogs = async (req: Request, res: Response): Promise<void> => {
     try {
-        const blogs = await Blog.find({});
+        const blogs = await Blog.find({}).sort({ createdAt: -1 });
 
         if (blogs.length === 0) {
             res.status(404).json({
@@ -170,6 +170,38 @@ export const deleteBlog = async (req: Request, res: Response): Promise<void> => 
         })
     } catch (error: any) {
         console.error("Error while deleting blog", error);
+        res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: error?.message || "Internal Server Error",
+            error
+        })
+    }
+}
+
+export const searchBlogs = async (req: Request, res: Response): Promise<void> => {
+    const { query } = req.query;
+
+    try {
+        const blogs = await Blog.find({ title: { $regex: query, $options: "i" } });
+
+        if (blogs.length === 0) {
+            res.status(404).json({
+                success: false,
+                statusCode: 404,
+                message: "Blogs not found"
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            statusCode: 200,
+            message: "Blogs fetched successfully",
+            data: blogs
+        })
+    } catch (error: any) {
+        console.error("Error while searching blog", error);
         res.status(500).json({
             success: false,
             statusCode: 500,
