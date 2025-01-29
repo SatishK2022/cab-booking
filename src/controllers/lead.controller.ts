@@ -34,7 +34,52 @@ export const createLead = async (req: Request, res: Response): Promise<void> => 
 
 export const getAllLeads = async (req: Request, res: Response): Promise<void> => {
     try {
-        const leads = await Lead.find({}).sort({ createdAt: -1 });
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+        const { filters = {}, projection } = req.body || {};
+
+        const filterConditions: any[] = [];
+
+        if (filters) {
+            if (filters.name) {
+                filterConditions.push({ name: { $regex: filters.name, $options: "i" } });
+            }
+            if (filters.email) {
+                filterConditions.push({ email: { $regex: filters.email, $options: "i" } });
+            }
+            if (filters.phone) {
+                filterConditions.push({ phone: { $regex: filters.phone, $options: "i" } });
+            }
+            if (filters.pickupAddress) {
+                filterConditions.push({ pickupAddress: { $regex: filters.pickupAddress, $options: "i" } });
+            }
+            if (filters.dropAddress) {
+                filterConditions.push({ dropAddress: { $regex: filters.dropAddress, $options: "i" } });
+            }
+            if (filters.pickupDate) {
+                filterConditions.push({ pickupDate: { $regex: filters.pickupDate, $options: "i" } });
+            }
+            if (filters.dropDate) {
+                filterConditions.push({ dropDate: { $regex: filters.dropDate, $options: "i" } });
+            }
+        }
+
+        const filterObjects = filterConditions.length > 0 ? { $or: filterConditions } : {};
+
+        const projectionObject = projection || {
+            name: 1,
+            email: 1,
+            phone: 1,
+            pickupAddress: 1,
+            dropAddress: 1,
+            pickupDate: 1,
+            dropDate: 1,
+            createdAt: 1,
+            updatedAt: 1
+        };
+
+        const leads = await Lead.find(filterObjects, projectionObject).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
         if (leads.length === 0) {
             res.status(404).json({
@@ -45,12 +90,24 @@ export const getAllLeads = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
+        const totalCount = await Lead.countDocuments(filterObjects);
+
         res.status(200).json({
             success: true,
             statusCode: 200,
             message: "Leads fetched successfully",
-            data: leads
-        })
+            data: {
+                data: leads,
+                pagination: {
+                    total_records: totalCount,
+                    total_pages: Math.ceil(totalCount / limit),
+                    limit,
+                    current_page: page,
+                    next_page: page < Math.ceil(totalCount / limit) ? page + 1 : null,
+                    prev_page: page > 1 ? page - 1 : null
+                }
+            }
+        });
     } catch (error: any) {
         console.error("Error while getting leads", error);
         res.status(500).json({
@@ -58,7 +115,7 @@ export const getAllLeads = async (req: Request, res: Response): Promise<void> =>
             statusCode: 500,
             message: error?.message || "Internal Server Error",
             error
-        })
+        });
     }
 }
 

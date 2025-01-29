@@ -4,11 +4,8 @@ import { createLead, deleteLead, getAllLeads, getLead, searchLead, updateLead } 
 
 const router: Router = Router();
 
-router
-    .route("/")
-    .post(verifyJWT, createLead)
-    .get(verifyJWT, getAllLeads);
-
+router.post("/", verifyJWT, createLead);
+router.post("/all", verifyJWT, getAllLeads);
 router.get("/search", verifyJWT, searchLead);
 
 router
